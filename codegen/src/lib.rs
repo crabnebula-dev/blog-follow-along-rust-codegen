@@ -1,4 +1,4 @@
-use quote::{quote, TokenStreamExt};
+use quote::quote;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
@@ -27,29 +27,29 @@ fn gather_asset_paths(base: &Path) -> Vec<PathBuf> {
 
 /// Generate Rust code to create an [`asset-bundler::Asset`].
 fn generate_code(paths: &[PathBuf], base: &Path) -> String {
-    let mut tokens = quote!();
+    let keys = keys(paths, base);
+    let values = paths.iter().map(|p| p.to_string_lossy());
 
-    // generate the body of the `phf_map!` call we make at the end
-    for path in paths {
-        // we want to use the relative path as a key but still need to tell
-        // `include_str!()` the full path. we use unwrap here, because we use
-        // the same base path that we generated the paths with
-        let relative = path.strip_prefix(base).unwrap().to_string_lossy();
-        let full = path.to_string_lossy();
-
-        tokens.append_all(quote! {
-            #relative => include_str!(#full),
-        });
-    }
-
-    // use the full module resolution syntax to ensure
-    // we get the right crate and not clash with other items
-    let output = quote! {
-        {
-            use ::asset_bundler::{Assets, phf::{self, phf_map}};
-            Assets::from(phf_map!(#tokens))
-        }
-    };
+    let output = quote! {{
+        use ::asset_bundler::{Assets, phf::{self, phf_map}};
+        Assets::from(phf_map! {
+            #( #keys => include_str!(#values) ),*
+        })
+    }};
 
     output.to_string()
+}
+
+/// Turn paths into relative paths suitable for keys.
+fn keys(paths: &[PathBuf], base: &Path) -> Vec<String> {
+    let mut keys = Vec::new();
+
+    for path in paths {
+        // ignore this failure case for this example
+        if let Ok(key) = path.strip_prefix(base) {
+            keys.push(key.to_string_lossy().into())
+        }
+    }
+
+    keys
 }
