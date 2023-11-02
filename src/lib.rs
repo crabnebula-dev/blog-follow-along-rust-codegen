@@ -12,8 +12,8 @@ impl From<Map> for Assets {
 }
 
 impl Assets {
-    /// Fetch the contents of the specified asset path
-    pub fn fetch(&self, path: &str) -> Option<&str> {
+    /// Get the contents of the specified asset path
+    pub fn get(&self, path: &str) -> Option<&str> {
         self.0.get(path).copied()
     }
 }
