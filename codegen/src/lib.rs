@@ -30,6 +30,7 @@ fn generate_code(paths: &[PathBuf], base: &Path) -> String {
     let keys = keys(paths, base);
     let values = paths.iter().map(|p| p.to_string_lossy());
 
+    // double brackets to make it a block expression
     let output = quote! {{
         use ::asset_bundler::{Assets, phf::{self, phf_map}};
         Assets::from(phf_map! {
